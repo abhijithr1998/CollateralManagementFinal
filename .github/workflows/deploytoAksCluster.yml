@@ -1,0 +1,50 @@
+on: [push]
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    
+    - uses: azure/docker-login@v1
+      with:
+        login-server: collateralmanagementsystem.azurecr.io
+        username: ${{ secrets.acr_collateralmanagementsystem_username }}
+        password: ${{ secrets.acr_collateralmanagementsystem_password }}
+    
+    - name: Build and push image to ACR
+      id: build-image
+      run: |
+        docker build "$GITHUB_WORKSPACE/CollateralManagement" -f  "CollateralManagement/Dockerfile" -t collateralmanagementsystem.azurecr.io/collateralmanagementkuc:${{ github.sha }} --label dockerfile-path=CollateralManagement/Dockerfile
+        docker push collateralmanagementsystem.azurecr.io/collateralmanagementkuc:${{ github.sha }}
+    
+    - uses: azure/k8s-set-context@v1
+      with:
+         kubeconfig: ${{ secrets.aks_collateralmanagementkuc_kubeConfig }}
+      id: login
+    
+    - name: Create namespace
+      run: |
+        namespacePresent=`kubectl get namespace | grep collateralmanagementkuc9b7b | wc -l`
+        if [ $namespacePresent -eq 0 ]
+        then
+            echo `kubectl create namespace collateralmanagementkuc9b7b`
+        fi
+
+    - uses: azure/k8s-create-secret@v1
+      with:
+        namespace: collateralmanagementkuc9b7b
+        container-registry-url: collateralmanagementsystem.azurecr.io
+        container-registry-username: ${{ secrets.acr_collateralmanagementsystem_username }}
+        container-registry-password: ${{ secrets.acr_collateralmanagementsystem_password }}
+        secret-name: collateralmadockerauth
+       
+    - uses: azure/k8s-deploy@v1.2
+      with:
+        namespace: collateralmanagementkuc9b7b
+        manifests: |
+          manifests/deployment.yml
+          manifests/service.yml
+        images: |
+          collateralmanagementsystem.azurecr.io/collateralmanagementkuc:${{ github.sha }}
+        imagepullsecrets: |
+          collateralmadockerauth
