@@ -1,0 +1,19 @@
+apiVersion : apps/v1
+kind: Deployment
+metadata:
+  name: "collateralmanagementkuc-f5cd"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: "collateralmanagementkuc-f5cd"
+  template:
+    metadata:
+      labels:
+        app: "collateralmanagementkuc-f5cd"
+    spec:
+      containers:
+        - name: "collateralmanagementkuc-f5cd"
+          image: "collateralmanagementsystem.azurecr.io/collateralmanagementkuc"
+          ports:
+          - containerPort: 80
