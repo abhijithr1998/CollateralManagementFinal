@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+    name: "collateralmanagementkuc-f5cd"
+    labels:
+        app: "collateralmanagementkuc-f5cd"
+spec:
+    type: LoadBalancer
+    ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: http
+    selector:
+        app: "collateralmanagementkuc-f5cd"
